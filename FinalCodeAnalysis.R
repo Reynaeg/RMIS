@@ -1,13 +1,28 @@
-# --- Code for Analysis of Experiment Data --- #
-# Make sure you have the data installed too #
+# -------------------------------------------- #
+# Code for Analysis of Experiment Data 
+# Make sure you have the data installed too! 
+# -------------------------------------------- #
 
-# -- Load & Preprocess the Data -- #
+# 1. Loading and installing all packages 
+
+# You can un-comment the install.packages() functions if you need to install the packages. 
+# But it makes my laptop slow when running this script.
+
+# install.packages("tidyverse")
+library(tidyverse)
+# install.packages("psych")
+library(psych)
+# install.packages("rstatix")
+library(rstatix)
+# install.packages("ggplot2")
+library(ggplot2)
+
+# 2. Load & Preprocess the Data 
+
 rawdata = read.csv('TestData.csv')  # CHANGE THE NAME TO THE DEFAULT NAME OF THE FILE FOR THE FINAL VERSION! this is just to know which is(n't) the final data
 dropdata = subset(rawdata, select = -c(1,2))  # remove timestamps and informed consent columns as they don't require analysis.
 
-# Load the tidyverse library to rename columns for better readability 
-install.packages("tidyverse")
-library(tidyverse)
+# Using tidyverse to rename columns for better readability 
 data = dropdata %>% rename(Age = Wat.is.uw.leeftijd..in.jaren..,
                            Gender = Wat.is.uw.geslacht., 
                            ControlCondition = Conditie.A.resultaat,
@@ -31,8 +46,6 @@ data$ID = seq.int(nrow(data)) # Add an ID row, for ease of use as I'm not famili
 
 # -- Descriptive statistics of participants -- #
 # Using describe() with the psych package
-install.packages("psych")
-library(psych)
 describe(data)  # contains lots of useful descriptive statistics, however we only need Age and the 3 conditions.
 summary(data)  # for IQR, median and Range
 
@@ -53,21 +66,17 @@ gamma = data$GammaCondition
 # -- Normality -- #
 # Shapiro-Wilk test to check normal distribution for 3 condition results
 # The null-hypothesis for Shapiro-Wilk test assumes that the data IS normally distributed. Thus, we do not want p < 0.05 
-shapiro.test(control)
-shapiro.test(beta)
-shapiro.test(gamma)
-# although this checks if all conditions are normal, I don't know if that is what ANOVA assumes. 
-# so we can also check for normality of differences between conditions?
+# So we can also check for normality of differences between conditions? I think this is the way to go.
 shapiro.test(beta - control)
 shapiro.test(gamma - control)
 shapiro.test(gamma - beta)
 
 # -- Repeated Measures Anova -- #
-# We also need to do Mauchly's tets of sphericity, but that is done with the function anova_test()
+# We also need to do Mauchly's tets of sphericity aka equal variance in conditions i think, but that is done with the function anova_test()
+# You do NOT want to violate this, aka, finding p > 0.05 is what we want
 # The table needs to be pivotted for this
 # But we still need some packages 
-install.packages("rstatix")
-library(rstatix)
+
 
 longTable = data %>% pivot_longer(cols = c(ControlCondition, BetaCondition, GammaCondition),
                                   names_to = "Condition",
@@ -81,7 +90,10 @@ anova_scores = anova_test(
   within = Condition
 )
 
-anova_scores  # computes anova AND mauchly
+# GG only if Mauchly IS significant, and thus violates. Otherwise no correction is needed
+anova_scores  # computes anova, mauchly AND we can check greenhouse geisser corrected annova like this if needed:
+get_anova_table(anova_scores, correction = "GG")
+
 
 # -- Post hoc paired w/ bonferroni -- #
 posthocpaired = longTable %>%
