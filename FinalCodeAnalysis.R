@@ -19,8 +19,12 @@ library(ggplot2)
 
 # 2. Load & Preprocess the Data 
 
-rawdata = read.csv('TestData.csv')  # CHANGE THE NAME TO THE DEFAULT NAME OF THE FILE FOR THE FINAL VERSION! this is just to know which is(n't) the final data
-dropdata = subset(rawdata, select = -c(1,2))  # remove timestamps and informed consent columns as they don't require analysis.
+# This is the name of the .csv file downloaded from the google Forms. 
+# You may need to rename it if you were to re-run the experiment
+rawdata = read.csv('Experiment research methods (Antwoorden) - Formulierreacties 1.csv')  
+
+# remove timestamps and informed consent columns as they don't require analysis.
+dropdata = subset(rawdata, select = -c(1,2))
 
 # Using tidyverse to rename columns for better readability 
 data = dropdata %>% rename(Age = Wat.is.uw.leeftijd..in.jaren..,
@@ -46,22 +50,27 @@ data$ID = seq.int(nrow(data)) # Add an ID row, for ease of use as I'm not famili
 
 # -- Descriptive statistics of participants -- #
 # Using describe() with the psych package
+control = data$ControlCondition  # shortening them for ease of use
+beta = data$BetaCondition
+gamma = data$GammaCondition
+
 describe(data)  # contains lots of useful descriptive statistics, however we only need Age and the 3 conditions.
 summary(data)  # for IQR, median and Range
+t.test(control)  # for CI, check CI for mean
+t.test(beta)
+t.test(gamma)
 
 # Now we need counts and descriptive statistics for the categorical variables, such as Gender, Most/Least pleasant noise and Disorders.
 count(data, Gender, sort = TRUE)
 count(data, Disorder, sort = TRUE)  # Disorders will be counted, although (due to lack of constraints on open ended questions) the specific disorders will be counted by hand
-count(data, MostPleasantNoise, sort = TRUE)
-count(data, LeastPleasantNoise, sort = TRUE)
+pleasant = count(data, MostPleasantNoise, sort = TRUE)
+unpleasant = count(data, LeastPleasantNoise, sort = TRUE)
 
 # The Column Extra will be interpreted by the researchers, also due to lack of constraints on open ended questions
 
 # -- Result Analysis -- #
 
-control = data$ControlCondition  # shortening them for ease of use
-beta = data$BetaCondition
-gamma = data$GammaCondition
+
 
 # -- Normality -- #
 # Shapiro-Wilk test to check normal distribution for 3 condition results
@@ -75,7 +84,6 @@ shapiro.test(gamma - beta)
 # We also need to do Mauchly's tets of sphericity aka equal variance in conditions i think, but that is done with the function anova_test()
 # You do NOT want to violate this, aka, finding p > 0.05 is what we want
 # The table needs to be pivotted for this
-# But we still need some packages 
 
 
 longTable = data %>% pivot_longer(cols = c(ControlCondition, BetaCondition, GammaCondition),
@@ -106,9 +114,10 @@ posthocpaired = longTable %>%
 posthocpaired
 
 
-# -- Visualisation? -- #
-library(ggplot2)
-boxplot(Score ~ Condition, data = longTable) # just normal visualisation, but boxplot is a little iffy for within participants, no?
+# -- Visualisation -- #
+# Visualisations not only for the research document but also the poster perhaps?
+
+boxplot(Score ~ Condition, data = longTable) # just normal visualisation, but normal boxplots are a little boring.
 
 ggplot(longTable, aes(x = Condition, y = Score)) +
   geom_boxplot() +
@@ -118,3 +127,23 @@ ggplot(longTable, aes(x = Condition, y = Score)) +
   geom_violin() +
   geom_boxplot(width = 0.1)  # violin plots
 
+# and then these two for poster, as they help us visualize the participants demographics 
+
+ggplot(data, aes(x = Gender)) +
+  geom_bar() +
+  theme_test()  
+
+ggplot(data, aes(x = Age)) +
+  geom_histogram(binwidth = 1) +
+  scale_x_continuous(breaks = 18:28) +
+  theme_test()   
+
+# ranking pleasant and unpleasant noises
+ggplot(pleasant, aes(x= MostPleasantNoise, y=n)) +
+       geom_col() + 
+       geom_text(aes(label=n), vjust = -0.5) + 
+       theme_test()
+ggplot(unpleasant, aes(x= LeastPleasantNoise, y=n)) +
+       geom_col() + 
+       geom_text(aes(label=n), vjust = -0.5) + 
+       theme_test()
