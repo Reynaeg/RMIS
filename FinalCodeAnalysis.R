@@ -127,11 +127,24 @@ ggplot(longTable, aes(x = Condition, y = Score)) +
   geom_violin() +
   geom_boxplot(width = 0.1)  # violin plots
 
-# and then these two for poster, as they help us visualize the participants demographics 
+# and then these for poster, as they help us visualize the participants demographics 
 
-ggplot(data, aes(x = Gender)) +
-  geom_bar() +
-  theme_test()  
+ggplot(data, aes(x = 2, fill =  Gender)) +
+  geom_bar(width = 1) +
+  geom_text(stat = "count", aes(label = after_stat(count)),
+            position = position_stack(vjust = 0.5)) +
+  coord_polar(theta = "y") +
+  xlim(c(0.5, 2.5)) +
+  theme_void() 
+
+ggplot(data, aes(x = "", fill = factor(Age))) +
+  geom_bar(width = 1) +
+  geom_text(stat = "count", aes(label = after_stat(count)),
+            position = position_stack(vjust = 0.5)) +
+  coord_polar(theta = "y") +
+  theme_void() # THIS IS SOO ugly im sorry
+  
+  # I MISS PYTHON I MISS PANDAS I HATE THISSSS 
 
 ggplot(data, aes(x = Age)) +
   geom_histogram(binwidth = 1) +
